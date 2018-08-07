@@ -1,11 +1,17 @@
 # grpc batch test
 
-batch grpc server by one client connect and multi connnet, then batch in different quality network.
+batch grpc server by one or multi client connnet, then batch test in different quality network.
+
+## get
+
+```
+cd $GOPATH;git clone https://github.com/rfyiamcool/grpc_batch_test.git
+```
 
 ## make go proto
 
 ```
-make pb
+cd src; make pb; ls helloworld
 ```
 
 ## test
@@ -28,3 +34,7 @@ result
 2018/08/07 22:29:16 one clinet took:  6.015762269s
 2018/08/07 22:29:25 multi client took:  6.423514978s
 ```
+
+## summary
+
+none
