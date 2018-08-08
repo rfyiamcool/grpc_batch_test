@@ -3,12 +3,6 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "e70ybo0nfQP5x5EP4LcNCVdgF0s=",
-			"path": "github.com/freewebsys/grpc-go-demo/src/helloworld",
-			"revision": "8e21c1059ed0299f3bfd704c0f980a8e81fadc7a",
-			"revisionTime": "2017-03-07T13:21:20Z"
-		},
-		{
 			"checksumSHA1": "uuLcVQXUw0CNt8Y5tsmzLWGlixI=",
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "89a0c16f4dc2a70c0ed864d8ef64878f24fdaa51",
@@ -87,10 +81,10 @@
 			"revisionTime": "2018-08-01T01:39:56Z"
 		},
 		{
-			"checksumSHA1": "aRx3+hSBBJbAgVS8KiYQMuhmiC0=",
+			"checksumSHA1": "bUFzLI17IFx0pySue7o2xqwzLHU=",
 			"path": "golang.org/x/sys/unix",
-			"revision": "641605214e7dab930817f68e2fef560efbb033e5",
-			"revisionTime": "2018-03-20T11:01:45Z"
+			"revision": "acbc56fc7007d2a01796d5bde54f39e3b3e95945",
+			"revisionTime": "2018-08-07T06:48:36Z"
 		},
 		{
 			"checksumSHA1": "CbpjEkkOeh0fdM/V8xKDdI0AA88=",
