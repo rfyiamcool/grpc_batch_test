@@ -1,29 +1,36 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	pb "grpc-go-demo/src/helloworld"
 	"log"
 	"sync"
 	"time"
+
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	pb "grpc-go-demo/src/helloworld"
 )
 
 const (
-	address     = "localhost:50051"
 	defaultName = "world"
 )
 
 func main() {
-	oneClient()
-	time.Sleep(3 * time.Second)
-	multiClient()
+	addr := flag.String("addr", "127.0.0.1:50051", "input server addr")
+	clientNum := flag.Int("c", 10, "client num")
+	flag.Parse()
+
+	log.Printf("server addr: %s, multi client: %d", *addr, *clientNum)
+
+	oneClient(*addr, *clientNum)
+	time.Sleep(30 * time.Second)
+	multiClient(*addr, *clientNum)
 }
 
-func oneClient() {
+func oneClient(addr string, clientNum int) {
 	var wg sync.WaitGroup
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -31,7 +38,7 @@ func oneClient() {
 	c := pb.NewGreeterClient(conn)
 
 	start := time.Now()
-	for index := 0; index < 5; index++ {
+	for index := 0; index < clientNum; index++ {
 		var err error
 		var r *pb.HelloReply
 		go func() {
@@ -53,13 +60,13 @@ func oneClient() {
 	log.Println("one clinet took: ", end)
 }
 
-func multiClient() {
+func multiClient(addr string, clientNum int) {
 	var wg sync.WaitGroup
 
-	count := 5
+	count := clientNum
 	clientPool := []*grpc.ClientConn{}
 	for index := 0; index < count; index++ {
-		clientPool = append(clientPool, newClient())
+		clientPool = append(clientPool, newClient(addr))
 	}
 
 	start := time.Now()
@@ -90,8 +97,8 @@ func multiClient() {
 	log.Println("multi client took: ", end)
 }
 
-func newClient() *grpc.ClientConn {
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+func newClient(addr string) *grpc.ClientConn {
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		panic(fmt.Sprintf("did not connect: %v", err))
 	}
