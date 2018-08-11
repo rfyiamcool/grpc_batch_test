@@ -25,7 +25,7 @@ go run src/server/main.go
 start client
 
 ```
-go run src/client/main.go
+go run src/client/main.go -addr=172.31.12.12:50051 -c=30
 ```
 
 result
@@ -37,4 +37,8 @@ result
 
 ## summary
 
-none
+test in the following network environment, the performance is almost the same
+
+* in lan network
+* in wan network
+* in different city
