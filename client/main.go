@@ -4,16 +4,19 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"runtime"
 	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	pb "grpc-go-demo/src/helloworld"
+
+	pb "grpc_batch_test/helloworld"
 )
 
 const (
 	defaultName = "world"
+	roundCount  = 20000
 )
 
 func main() {
@@ -21,11 +24,24 @@ func main() {
 	clientNum := flag.Int("c", 10, "client num")
 	flag.Parse()
 
-	log.Printf("server addr: %s, multi client: %d", *addr, *clientNum)
+	totalCount := roundCount * *clientNum
+	log.Printf("server addr: %s, totalCount: %d, multi client: %d", *addr, totalCount, *clientNum)
 
+	// one client
+	oneTs := time.Now()
 	oneClient(*addr, *clientNum)
-	time.Sleep(30 * time.Second)
+	oneCost := time.Since(oneTs).Seconds()
+	log.Printf("one client only, qps is %d", totalCount/int(oneCost))
+
+	runtime.GC()
+	log.Printf("sleep 15; runtime.GC")
+	time.Sleep(15 * time.Second)
+
+	// multi client
+	multiTs := time.Now()
 	multiClient(*addr, *clientNum)
+	multiCost := time.Since(multiTs).Seconds()
+	log.Printf("multi client: %d, qps is %d", *clientNum, totalCount/int(multiCost))
 }
 
 func oneClient(addr string, clientNum int) {
@@ -42,7 +58,7 @@ func oneClient(addr string, clientNum int) {
 		var err error
 		var r *pb.HelloReply
 		go func() {
-			for idx := 0; idx < 20000; idx++ {
+			for idx := 0; idx < roundCount; idx++ {
 				r, err = c.SayHello(context.Background(), &pb.HelloRequest{Name: defaultName})
 				if err != nil {
 					log.Fatalf("could not greet: %v", err)
@@ -78,7 +94,7 @@ func multiClient(addr string, clientNum int) {
 			conn := clientPool[index]
 			c := pb.NewGreeterClient(conn)
 
-			for idx := 0; idx < 20000; idx++ {
+			for idx := 0; idx < roundCount; idx++ {
 				r, err = c.SayHello(context.Background(), &pb.HelloRequest{Name: defaultName})
 				if err != nil {
 					log.Fatalf("could not greet: %v", err)

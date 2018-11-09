@@ -3,11 +3,12 @@ package main
 import (
 	"log"
 	"net"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	pb "grpc-go-demo/src/helloworld"
 	"google.golang.org/grpc/reflection"
-	"fmt"
+
+	pb "grpc_batch_test/helloworld"
 )
 
 const (
@@ -19,7 +20,7 @@ type server struct{}
 
 // SayHello implements helloworld.GreeterServer
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	fmt.Println("######### get client request name :"+in.Name)
+	// fmt.Println("######### get client request name :"+in.Name)
 	return &pb.HelloReply{Message: "main: Hello " + in.Name}, nil
 }
 
