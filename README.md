@@ -5,13 +5,13 @@ batch grpc server by one or multi client connnet, then batch test in different q
 ## get
 
 ```
-cd $GOPATH;git clone https://github.com/rfyiamcool/grpc_batch_test.git
+cd $GOPATH/src;git clone https://github.com/rfyiamcool/grpc_batch_test.git
 ```
 
 ## make go proto
 
 ```
-cd src; make pb; ls helloworld
+cd grpc_batch_test; make pb; make install; ls helloworld
 ```
 
 ## test
@@ -19,13 +19,13 @@ cd src; make pb; ls helloworld
 start server
 
 ```
-go run src/server/main.go
+./bin/server
 ```
 
 start client
 
 ```
-go run src/client/main.go -addr=172.31.12.12:50051 -c=30
+./bin/client -addr=172.31.12.12:50051 -c=30
 ```
 
 result
