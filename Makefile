@@ -11,6 +11,11 @@ install:
 
 pb:
 	@protoc -I ./proto helloworld.proto --go_out=plugins=grpc:helloworld
+	@protoc -I ./proto helloworld.proto --gofast_out=plugins=grpc:helloworld
+	@ls helloworld
+
+gopb:
+	@protoc -I ./proto helloworld.proto --gofast_out=plugins=grpc:helloworld
 	@ls helloworld
 
 clean:
