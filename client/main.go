@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 	"sync"
 	"time"
@@ -20,6 +22,10 @@ const (
 )
 
 func main() {
+	go func() {
+		http.ListenAndServe("0.0.0.0:8080", nil)
+	}()
+
 	addr := flag.String("addr", "127.0.0.1:50051", "input server addr")
 	clientNum := flag.Int("c", 10, "client num")
 	flag.Parse()
@@ -46,7 +52,10 @@ func main() {
 
 func oneClient(addr string, clientNum int) {
 	var wg sync.WaitGroup
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(
+		addr,
+		grpc.WithInsecure(),
+	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}

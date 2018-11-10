@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -25,11 +27,18 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 }
 
 func main() {
+	go func() {
+		http.ListenAndServe("0.0.0.0:8081", nil)
+	}()
+
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.MaxConcurrentStreams(64),
+		grpc.WriteBufferSize(64*1024),
+	)
 	pb.RegisterGreeterServer(s, &server{})
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
