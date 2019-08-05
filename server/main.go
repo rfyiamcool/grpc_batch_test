@@ -35,8 +35,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
 	s := grpc.NewServer(
-		grpc.MaxConcurrentStreams(64),
+		grpc.MaxConcurrentStreams(1024),
 		grpc.WriteBufferSize(64*1024),
 	)
 	pb.RegisterGreeterServer(s, &server{})

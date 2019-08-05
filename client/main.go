@@ -66,29 +66,31 @@ func oneClient(addr string, totalCount, clientNum int) {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewGreeterClient(conn)
+	req := pb.NewGreeterClient(conn)
 
-	start := time.Now()
 	for index := 0; index < clientNum; index++ {
-		var err error
-		var r *pb.HelloReply
+		var (
+			r   *pb.HelloReply
+			err error
+		)
+
+		wg.Add(1)
 		go func() {
-			for idx := 0; idx < totalCount; idx++ {
-				r, err = c.SayHello(context.Background(), &pb.HelloRequest{Name: defaultName})
+			roundCount := totalCount / clientNum
+			for idx := 0; idx < roundCount; idx++ {
+				r, err = req.SayHello(context.Background(), &pb.HelloRequest{Name: defaultName})
 				if err != nil {
 					log.Fatalf("could not greet: %v", err)
 				}
+
 				if r.Message != "main: Hello world" {
 					log.Printf("####### get server Greeting response: %s", r.Message)
 				}
 			}
 			wg.Done()
 		}()
-		wg.Add(1)
 	}
 	wg.Wait()
-	end := time.Since(start)
-	log.Println("one clinet took: ", end)
 }
 
 func multiClient(addr string, totalCount, clientNum int) {
@@ -99,8 +101,8 @@ func multiClient(addr string, totalCount, clientNum int) {
 		clientPool = append(clientPool, newClient(addr))
 	}
 
-	start := time.Now()
 	for index := 0; index < clientNum; index++ {
+		wg.Add(1)
 		go func(index int) {
 			var err error
 			var r *pb.HelloReply
@@ -114,6 +116,7 @@ func multiClient(addr string, totalCount, clientNum int) {
 				if err != nil {
 					log.Fatalf("could not greet: %v", err)
 				}
+
 				if r.Message != "main: Hello world" {
 					log.Printf("####### get server Greeting response: %s", r.Message)
 				}
@@ -121,11 +124,8 @@ func multiClient(addr string, totalCount, clientNum int) {
 
 			wg.Done()
 		}(index)
-		wg.Add(1)
 	}
 	wg.Wait()
-	end := time.Since(start)
-	log.Println("multi client took: ", end)
 }
 
 func newClient(addr string) *grpc.ClientConn {
