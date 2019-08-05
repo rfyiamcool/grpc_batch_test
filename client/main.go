@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
-	"runtime"
 	"sync"
 	"time"
 
@@ -18,7 +17,13 @@ import (
 
 const (
 	defaultName = "world"
-	roundCount  = 20000
+)
+
+var (
+	addr       = flag.String("addr", "127.0.0.1:50051", "input server addr")
+	clientNum  = flag.Int("c", 10, "client num")
+	totalCount = flag.Int("n", 200000, "total requests")
+	mode       = flag.String("mode", "multi", "one or multi")
 )
 
 func main() {
@@ -26,31 +31,32 @@ func main() {
 		http.ListenAndServe("0.0.0.0:8080", nil)
 	}()
 
-	addr := flag.String("addr", "127.0.0.1:50051", "input server addr")
-	clientNum := flag.Int("c", 10, "client num")
 	flag.Parse()
+	log.Printf("server addr: %s, totalCount: %d, multi client: %d, mode: %s",
+		*addr,
+		*totalCount,
+		*clientNum,
+		*mode,
+	)
 
-	totalCount := roundCount * *clientNum
-	log.Printf("server addr: %s, totalCount: %d, multi client: %d", *addr, totalCount, *clientNum)
+	switch *mode {
+	case "one":
+		// one client
+		oneTs := time.Now()
+		oneClient(*addr, *totalCount, *clientNum)
+		oneCost := time.Since(oneTs).Seconds()
+		log.Printf("one client only, qps is %d", *totalCount/int(oneCost))
 
-	// one client
-	oneTs := time.Now()
-	oneClient(*addr, *clientNum)
-	oneCost := time.Since(oneTs).Seconds()
-	log.Printf("one client only, qps is %d", totalCount/int(oneCost))
-
-	runtime.GC()
-	log.Printf("sleep 15; runtime.GC")
-	time.Sleep(15 * time.Second)
-
-	// multi client
-	multiTs := time.Now()
-	multiClient(*addr, *clientNum)
-	multiCost := time.Since(multiTs).Seconds()
-	log.Printf("multi client: %d, qps is %d", *clientNum, totalCount/int(multiCost))
+	case "multi":
+		// multi client
+		multiTs := time.Now()
+		multiClient(*addr, *totalCount, *clientNum)
+		multiCost := time.Since(multiTs).Seconds()
+		log.Printf("multi client: %d, qps is %d", *clientNum, *totalCount/int(multiCost))
+	}
 }
 
-func oneClient(addr string, clientNum int) {
+func oneClient(addr string, totalCount, clientNum int) {
 	var wg sync.WaitGroup
 	conn, err := grpc.Dial(
 		addr,
@@ -67,7 +73,7 @@ func oneClient(addr string, clientNum int) {
 		var err error
 		var r *pb.HelloReply
 		go func() {
-			for idx := 0; idx < roundCount; idx++ {
+			for idx := 0; idx < totalCount; idx++ {
 				r, err = c.SayHello(context.Background(), &pb.HelloRequest{Name: defaultName})
 				if err != nil {
 					log.Fatalf("could not greet: %v", err)
@@ -85,17 +91,16 @@ func oneClient(addr string, clientNum int) {
 	log.Println("one clinet took: ", end)
 }
 
-func multiClient(addr string, clientNum int) {
+func multiClient(addr string, totalCount, clientNum int) {
 	var wg sync.WaitGroup
 
-	count := clientNum
 	clientPool := []*grpc.ClientConn{}
-	for index := 0; index < count; index++ {
+	for index := 0; index < clientNum; index++ {
 		clientPool = append(clientPool, newClient(addr))
 	}
 
 	start := time.Now()
-	for index := 0; index < count; index++ {
+	for index := 0; index < clientNum; index++ {
 		go func(index int) {
 			var err error
 			var r *pb.HelloReply
@@ -103,6 +108,7 @@ func multiClient(addr string, clientNum int) {
 			conn := clientPool[index]
 			c := pb.NewGreeterClient(conn)
 
+			roundCount := totalCount / clientNum
 			for idx := 0; idx < roundCount; idx++ {
 				r, err = c.SayHello(context.Background(), &pb.HelloRequest{Name: defaultName})
 				if err != nil {
