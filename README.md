@@ -11,7 +11,7 @@ cd $GOPATH/src;git clone https://github.com/rfyiamcool/grpc_batch_test.git
 ## make go proto
 
 ```
-cd grpc_batch_test; make pb; make install; ls helloworld
+cd grpc_batch_test; make pb; make build; ls helloworld
 ```
 
 ## test
@@ -25,14 +25,13 @@ start server
 start client
 
 ```
-./bin/client -addr=172.31.12.12:50051 -c=30
+./bin/client -addr=172.31.12.12:50051 -c=30 -n=500000 -mode=multi
 ```
 
 result
 
 ```
-2018/08/07 22:29:16 one clinet took:  6.015762269s
-2018/08/07 22:29:25 multi client took:  6.423514978s
+multi client: 10, qps is 98571
 ```
 
 ## summary

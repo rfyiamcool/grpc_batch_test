@@ -4,7 +4,7 @@ export GO15VENDOREXPERIMENT=1
 
 build-all: pb
 
-install:
+build:
 	@rm -rf bin
 	@go build -o bin/server server/main.go
 	@go build -o bin/client client/main.go
