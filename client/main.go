@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
 	"sync"
 	"time"
+
+	_ "net/http/pprof"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -21,9 +22,9 @@ const (
 
 var (
 	addr       = flag.String("addr", "127.0.0.1:50051", "input server addr")
-	clientNum  = flag.Int("c", 10, "client num")
+	clientNum  = flag.Int("c", 10, "grpc-client connnect num")
+	workerNum  = flag.Int("g", 10, "goroutine nums")
 	totalCount = flag.Int("n", 200000, "total requests")
-	mode       = flag.String("mode", "multi", "one or multi")
 )
 
 func main() {
@@ -32,68 +33,22 @@ func main() {
 	}()
 
 	flag.Parse()
-	log.Printf("server addr: %s, totalCount: %d, multi client: %d, mode: %s",
+	log.Printf("server addr: %s, totalCount: %d, multi client: %d, worker num: %d",
 		*addr,
 		*totalCount,
 		*clientNum,
-		*mode,
+		*workerNum,
 	)
 
-	switch *mode {
-	case "one":
-		// one client
-		oneTs := time.Now()
-		oneClient(*addr, *totalCount, *clientNum)
-		oneCost := time.Since(oneTs).Seconds()
-		log.Printf("one client only, qps is %d", *totalCount/int(oneCost))
+	startTime := time.Now()
+	handleMultiClient(*addr, *totalCount, *clientNum, *workerNum)
+	costTime := float64(time.Now().Sub(startTime).Nanoseconds()) / float64(1000) / float64(1000) / float64(1000)
 
-	case "multi":
-		// multi client
-		multiTs := time.Now()
-		multiClient(*addr, *totalCount, *clientNum)
-		multiCost := time.Since(multiTs).Seconds()
-		log.Printf("multi client: %d, qps is %d", *clientNum, *totalCount/int(multiCost))
-	}
+	qps := float64(*totalCount) / costTime
+	log.Printf("multi client: %d, qps is %.0f", *clientNum, qps)
 }
 
-func oneClient(addr string, totalCount, clientNum int) {
-	var wg sync.WaitGroup
-	conn, err := grpc.Dial(
-		addr,
-		grpc.WithInsecure(),
-	)
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	req := pb.NewGreeterClient(conn)
-
-	for index := 0; index < clientNum; index++ {
-		var (
-			r   *pb.HelloReply
-			err error
-		)
-
-		wg.Add(1)
-		go func() {
-			roundCount := totalCount / clientNum
-			for idx := 0; idx < roundCount; idx++ {
-				r, err = req.SayHello(context.Background(), &pb.HelloRequest{Name: defaultName})
-				if err != nil {
-					log.Fatalf("could not greet: %v", err)
-				}
-
-				if r.Message != "main: Hello world" {
-					log.Printf("####### get server Greeting response: %s", r.Message)
-				}
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-}
-
-func multiClient(addr string, totalCount, clientNum int) {
+func handleMultiClient(addr string, totalCount, clientNum, workerNum int) {
 	var wg sync.WaitGroup
 
 	clientPool := []*grpc.ClientConn{}
@@ -101,16 +56,16 @@ func multiClient(addr string, totalCount, clientNum int) {
 		clientPool = append(clientPool, newClient(addr))
 	}
 
-	for index := 0; index < clientNum; index++ {
+	for index := 0; index < workerNum; index++ {
 		wg.Add(1)
 		go func(index int) {
-			var err error
 			var r *pb.HelloReply
+			var err error
 
-			conn := clientPool[index]
-			c := pb.NewGreeterClient(conn)
+			cidx := index % clientNum
+			c := pb.NewGreeterClient(clientPool[cidx])
 
-			roundCount := totalCount / clientNum
+			roundCount := totalCount / workerNum
 			for idx := 0; idx < roundCount; idx++ {
 				r, err = c.SayHello(context.Background(), &pb.HelloRequest{Name: defaultName})
 				if err != nil {
@@ -118,7 +73,7 @@ func multiClient(addr string, totalCount, clientNum int) {
 				}
 
 				if r.Message != "main: Hello world" {
-					log.Printf("####### get server Greeting response: %s", r.Message)
+					log.Printf("get server Greeting response: %s\n", r.Message)
 				}
 			}
 
